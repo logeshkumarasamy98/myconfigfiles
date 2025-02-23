@@ -1,0 +1,50 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    # Permissions needed to deploy to Cloud Run
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud using Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: "access_token"
+          # The workload identity pool and provider are specific to your project.
+          workload_identity_provider: "projects/462199367704/locations/global/workloadIdentityPools/my-pool/providers/my-provider"
+          # The service account must have the roles/iam.workloadIdentityUser role.
+          service_account: "cloudrunserviceaccount@logesh-all-test.iam.gserviceaccount.com"
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: logesh-all-test
+
+      - name: Authenticate Docker to Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build Docker image
+        run: docker build -t us-central1-docker.pkg.dev/logesh-all-test/logesh/gitactiontest:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: docker push us-central1-docker.pkg.dev/logesh-all-test/logesh/gitactiontest:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: gitactiontest
+          image: us-central1-docker.pkg.dev/logesh-all-test/logesh/gitactiontest:${{ github.sha }}
+          region: us-central1
+          allow_unauthenticated: false
