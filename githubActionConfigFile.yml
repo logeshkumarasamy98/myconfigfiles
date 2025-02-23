@@ -26,6 +26,8 @@ jobs:
           workload_identity_provider: "projects/462199367704/locations/global/workloadIdentityPools/my-pool/providers/my-provider"
           # The service account must have the roles/iam.workloadIdentityUser role.
           service_account: "cloudrunserviceaccount@logesh-all-test.iam.gserviceaccount.com"
+          # lifetime of the access token
+          access_token_lifetime: '100s'
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
